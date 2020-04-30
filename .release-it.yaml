@@ -1,0 +1,6 @@
+git:
+  commitMessage: "chore: release v${version}"
+  tagName: "v${version}"
+hooks:
+  after:bump:
+    - npm run build

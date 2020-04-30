@@ -6,7 +6,7 @@
   "scripts": {
     "test": "webpack --config ./test/webpack.config.js",
     "build": "tsc -d && tsc -b",
-    "release": "release-it --no-git.requireCleanWorkingDir"
+    "release": "release-it"
   },
   "keywords": [
     "antd",
