@@ -1,10 +1,12 @@
 {
   "name": "antd-theme",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Provide runtime dynamic theme for ant design.",
   "main": "lib/index.js",
   "scripts": {
-    "test": "webpack --config ./test/webpack.config.js"
+    "test": "webpack --config ./test/webpack.config.js",
+    "build": "tsc -d && tsc -b",
+    "release": "release-it --no-git.requireCleanWorkingDir"
   },
   "keywords": [
     "antd",
@@ -31,6 +33,7 @@
     "less-loader": "^5.0.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
+    "release-it": "^13.5.7",
     "typescript": "^3.8.3",
     "webpack": "^4.43.0",
     "webpack-cli": "^3.3.11"
