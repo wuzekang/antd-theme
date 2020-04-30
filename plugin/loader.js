@@ -14,9 +14,14 @@ function loader(content) {
   }
 
   return [
-    ...content.split('\n').slice(0, -2),
+    'var content = (function (module) {',
+    'var css = { id: module.id, exports: {} };',
+    '(function (module) {',
+    content,
+    '})(css);',
+    'return css.exports;',
+    '}) (module);',
     `var loader = require(${JSON.stringify(loadedThemedStylesPath)});`,
-    'var content = exports',
     '',
     'if(typeof content === "string") content = [[module.id, content]];',
     '',

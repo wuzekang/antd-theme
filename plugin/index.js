@@ -101,18 +101,15 @@ class AntdThemePlugin {
         }
       );
 
-      compilation.mainTemplate.hooks.modules.tap(
-        pluginName,
-        (source, chunk) => {
-          const modules = chunk.getModules();
-          modules.forEach((module) => {
+      compilation.hooks.finishModules.tap(pluginName, (modules) => {
+        modules.forEach(
+          (module) => {
             if (themesModulePath && module.resource === themesModulePath) {
               module._source = new RawSource(`module.exports = ${JSON.stringify(themes)};`);
             }
-          });
-          return source;
-        }
-      );
+          }
+        );
+      });
     });
   }
 }
