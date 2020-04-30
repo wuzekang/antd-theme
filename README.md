@@ -109,6 +109,48 @@ const App = () => {
 ReactDOM.render(<App />, document.getElementById('root'));
 ```
 
+For those who are using `react-app-rewire-less` and `customize-cra` with react-app-rewired, enable javascript like this
+
+config-overrides.js
+
+```js
+const { override, fixBabelImports, addLessLoader, addPostcssPlugins, adjustStyleLoaders, addWebpackPlugin } = require('customize-cra');
+
+const AntdThemePlugin = require('antd-theme/plugin');
+
+module.exports = override(
+  fixBabelImports('import', {
+    libraryName: 'antd',
+    libraryDirectory: 'es',
+    style: true,
+  }),
+  addLessLoader({
+    javascriptEnabled: true,
+  }),
+  adjustStyleLoaders(
+    (loaders) => {
+      loaders.use[0] = {
+        loader: AntdThemePlugin.loader
+      }
+    }
+  ),
+  addWebpackPlugin(
+    new AntdThemePlugin({
+      themes: [
+        {
+          name: 'dark',
+          filename: require.resolve('antd/lib/style/themes/dark.less'),
+        },
+        {
+          name: 'compact',
+          filename: require.resolve('antd/lib/style/themes/compact.less'),
+        },
+      ],
+    })
+  ),
+);
+```
+
 ## Security considerations
 
 In order for `style` elements to be added to the DOM, a `nonce` attribute may need to be attached to the elements to adhere to a CSP requirements. To provide the value, you can specify the `nonce` value by defining a `CSPSettings` object on the page in global scope:
