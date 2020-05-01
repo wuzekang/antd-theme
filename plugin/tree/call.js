@@ -54,31 +54,24 @@ class Call extends less.tree.Call {
     const currentVarContext = context.inVarCall;
     context.inVarCall = this.var || context.inVarCall;
 
-    const currentRuntimeContext = context.inRuntimeCall;
-    context.inRuntimeCall = this.runtime || context.inRuntimeCall;
-
     const currentMathContext = context.mathOn;
     context.mathOn = !this.calc;
+
     if (this.calc || context.inCalc) {
       context.enterCalc();
     }
-    const args = context.inRuntimeCall ? this.args : this.args.map((a) => a.eval(context));
+
+    const args = this.args.map((a) => a.eval(context));
+
     if (this.calc || context.inCalc) {
       context.exitCalc();
     }
+
     context.mathOn = currentMathContext;
-
-    context.inRuntimeCall = currentRuntimeContext;
-
     context.inVarCall = currentVarContext;
-
 
     let result;
     const funcCaller = new FunctionCaller(this.name, context, this.getIndex(), this.fileInfo());
-
-    if (context.inRuntimeCall) {
-      return new Call(this.name, args, this.getIndex(), this.fileInfo());
-    }
 
     if (funcCaller.isValid()) {
       try {

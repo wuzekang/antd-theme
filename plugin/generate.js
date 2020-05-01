@@ -4,14 +4,16 @@ const ColorPalettePlugin = require('./colorPalettePlugin');
 const generateTheme = async (variables, exprs) => {
   const strs = [];
 
-  exprs.forEach(
-    (_, key) => strs.push(`@${key}: ${exprs.get(key)};`)
+  const keys = Object.keys(exprs);
+
+  keys.forEach(
+    (key) => strs.push(`@${key}: ${exprs[key]};`)
   );
 
   strs.push('.theme {');
 
-  exprs.forEach(
-    (_, key) => strs.push(`${key}: @${key};`)
+  keys.forEach(
+    (key) => strs.push(`${key}: @${key};`)
   );
 
   strs.push('}');
@@ -26,7 +28,7 @@ const generateTheme = async (variables, exprs) => {
           install: (less, pluginManager, functions) => {
             functions.add('theme', (name) => {
               if (name instanceof less.tree.Keyword) {
-                return variables[name.value.substr(2)];
+                return variables[name.value.substr(2)].node;
               }
               return name;
             });

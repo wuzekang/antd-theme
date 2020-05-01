@@ -15,7 +15,11 @@ class ThemeExtractVisitor {
   visitCall(node, visitArgs) {
     if (node.name === 'theme') {
       visitArgs.visitDeeper = false;
-      this.callback(node.varName({ inVarCall: true }), node.toCSSCall({ inVarCall: true }));
+      this.callback({
+        name: node.varName({ inVarCall: true }),
+        value: node.toCSSCall({ inVarCall: true }),
+        node,
+      });
     }
   }
 }
