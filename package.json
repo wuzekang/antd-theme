@@ -4,6 +4,7 @@
   "description": "Provide runtime dynamic theme for ant design.",
   "main": "lib/index.js",
   "scripts": {
+    "start": "webpack-dev-server --config ./test/webpack.config.js --open",
     "test": "webpack --config ./test/webpack.config.js",
     "build": "tsc -d && tsc -b",
     "release": "release-it"
@@ -31,13 +32,16 @@
     "eslint-plugin-jsx-a11y": "^6.2.3",
     "eslint-plugin-react": "^7.19.0",
     "eslint-plugin-react-hooks": "^2.5.1",
+    "html-webpack-plugin": "^4.3.0",
     "less-loader": "^5.0.0",
-    "react": "^16.13.1",
-    "react-dom": "^16.13.1",
+    "react": "^16.8.0",
+    "react-color": "^2.18.0",
+    "react-dom": "^16.8.0",
     "release-it": "^13.5.7",
     "typescript": "^3.8.3",
     "webpack": "^4.43.0",
-    "webpack-cli": "^3.3.11"
+    "webpack-cli": "^3.3.11",
+    "webpack-dev-server": "^3.10.3"
   },
   "dependencies": {
     "@microsoft/load-themed-styles": "^1.10.43",

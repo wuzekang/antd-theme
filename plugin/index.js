@@ -12,6 +12,8 @@ const sha1 = require('./sha1');
 const DependencyVisitor = require('./visitors/dependencyVisitor');
 
 const themesModulePath = path.resolve(__dirname, '../lib/themes.js');
+const defaultThemeName = 'default';
+
 class AntdThemePlugin {
   constructor(options) {
     this.options = options;
@@ -73,6 +75,7 @@ class AntdThemePlugin {
         )
       );
 
+      mergedVariableGroups[defaultThemeName] = defaultVariables;
       this.options.themes.forEach(
         (theme, i) => {
           mergedVariableGroups[theme.name] = {
@@ -95,20 +98,27 @@ class AntdThemePlugin {
         }
       );
 
-      Object.values(mergedVariableGroups).forEach(
-        (themeVariables, i) => {
-          Object.values(themeVariables).forEach(
-            (themeVariable) => {
-              themeVariable.runtime = isRuntimeVariable(i, themeVariable.expr, themeVariable.name);
+      Object.keys(mergedVariableGroups).forEach(
+        (themeName, themeIndex) => {
+          const themeVariables = mergedVariableGroups[themeName];
+          Object.keys(themeVariables).forEach(
+            (name) => {
+              const themeVariable = themeVariables[name];
+              themeVariables[name] = {
+                ...themeVariable,
+                runtime: isRuntimeVariable(themeIndex, themeVariable.expr, themeVariable.name),
+              };
             }
           );
         }
       );
 
       const changedVariableNames = new Set();
-
       Object.values(mergedVariableGroups).forEach(
-        (themeVariables) => {
+        (themeVariables, i) => {
+          if (i === 0) {
+            return;
+          }
           Object.values(themeVariables).forEach(
             (themeVariable) => {
               const { name } = themeVariable;
@@ -143,8 +153,17 @@ class AntdThemePlugin {
         const dependencyVisitor = new DependencyVisitor();
         const defineRuntimeExprs = new Map();
 
-        Object.keys(mergedVariableGroups).forEach((name, themeIndex) => {
+        Object.keys(mergedVariableGroups).forEach((themeName, themeIndex) => {
           const runtimeExprs = {};
+          const runtimeVariables = {};
+          const mergedVariables = mergedVariableGroups[themeName];
+
+          runtimeVariableNames.forEach(
+            (name) => {
+              runtimeVariables[name] = mergedVariables[name].node;
+            }
+          );
+
           Object.keys(extractedExprs).forEach(
             (name) => {
               const expr = extractedExprs[name];
@@ -162,7 +181,7 @@ class AntdThemePlugin {
               }
             }
           );
-          runtimeExprGroups[name] = runtimeExprs;
+          runtimeExprGroups[themeName] = runtimeExprs;
         });
 
         Object.keys(extractedExprs).forEach(
@@ -177,37 +196,11 @@ class AntdThemePlugin {
 
         const source = [];
 
-        // source.push('var functions = {');
-        // dependencyVisitor.functions.forEach(
-        //   (name) => {
-        //     source.push(`${JSON.stringify(name)}: ${JSON.stringify(require.resolve(''))}`);
-        //   }
-        // );
-
-        // source.push(`var functions = require(${JSON.stringify(path.join(__dirname, './functions'))});`);
-
-        // dependencyVisitor.nodeTypes.forEach(
-        //   (type) => {
-        //     source.push(`var ${type} = require(${JSON.stringify(require.resolve(`less/lib/less/tree/${type.toLowerCase()}`))});`);
-        //   }
-        // );
-
         defineRuntimeExprs.forEach(
           (value, key) => {
             source.push(`var _${key} = ${value};`);
           }
         );
-
-        /**
-         * var runtimeVariables = {
-         *  dark: {
-         *    primary1: compute(_xxxxxxxxx, '#000')
-         *  },
-         *  compact: {
-         *    primary1: compute(_xxxxxxxxx, '#000')
-         *  }
-         * }
-         */
 
         source.push('var themes = {');
 
@@ -222,7 +215,7 @@ class AntdThemePlugin {
                 const variable = JSON.stringify(themeVariables[name]);
                 const runtimeExpr = runtimeExprs[name];
                 if (runtimeExpr) {
-                  return (`${JSON.stringify(name)}: { theme: _${runtimeExpr.hash}, default: ${variable} }`);
+                  return (`${JSON.stringify(name)}: { expr: _${runtimeExpr.hash}, default: ${variable} }`);
                 }
                 return (`${JSON.stringify(name)}: ${variable}`);
               }

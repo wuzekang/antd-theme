@@ -1,42 +1,54 @@
 import { Button, Select } from 'antd';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { ThemeProvider, useTheme } from '../lib';
+import { SketchPicker } from 'react-color';
+import { ThemeProvider, useTheme, setTheme } from '../lib/index.tsx';
+
+const initialTheme = { name: 'default', variables: { 'primary-color': '#00ff00' } };
+
+setTheme(initialTheme);
 
 const ThemeSelect = () => {
-  const [{ name, themes }, setTheme] = useTheme();
+  const [{ name, variables, themes }, setTheme] = useTheme();
+
   return (
-    <Select
-      style={{ width: 100 }}
-      value={name}
-      onChange={
-        (theme) => setTheme({ name: theme })
-      }
-    >
-      <Select.Option value="">default</Select.Option>
-      {
-        themes.map(
-          ({ name }) => (
-            <Select.Option key={name} value={name}>
-              {name}
-            </Select.Option>
+    <>
+      <Select
+        style={{ width: 100 }}
+        value={name}
+        onChange={
+          (theme) => setTheme({ name: theme, variables })
+        }
+      >
+        {
+          themes.map(
+            ({ name }) => (
+              <Select.Option key={name} value={name}>
+                {name}
+              </Select.Option>
+            )
           )
-        )
-      }
-    </Select>
+        }
+      </Select>
+      <SketchPicker
+        color={variables['primary-color']}
+        onChange={(value) => {
+          setTheme({ name, variables: { 'primary-color': value.hex } });
+        }}
+      />
+    </>
   );
 };
 
 const App = () => {
-  const [theme, setTheme] = React.useState({ name: '' });
-
+  const [theme, setTheme] = React.useState(initialTheme);
   return (
     <ThemeProvider
       theme={theme}
       onChange={(value) => setTheme(value)}
     >
       <ThemeSelect />
-      <Button>Button</Button>
+      <Button type="primary">Button</Button>
     </ThemeProvider>
   );
 };

@@ -27,7 +27,7 @@ function serialize(node) {
   if (node instanceof less.tree.Variable) {
     return {
       type: node.type,
-      name: node.name.substr(1),
+      name: node.name,
     };
   }
 
@@ -58,11 +58,35 @@ function serialize(node) {
   if (node instanceof less.tree.Expression) {
     return {
       type: node.type,
-      value: node.value.mapp(serialize),
+      value: node.value.map(serialize),
       noSpacing: node.noSpacing,
     };
   }
 
+  if (node instanceof less.tree.Color) {
+    return {
+      type: node.type,
+      rgb: node.rgb,
+      alpha: node.alpha,
+      value: node.value,
+    };
+  }
+
+  if (node instanceof less.tree.Keyword) {
+    return {
+      type: node.type,
+      value: node.value,
+    };
+  }
+
+  if (node instanceof less.tree.Quoted) {
+    return {
+      type: node.type,
+      escaped: node.escaped,
+      value: node.value,
+      quote: node.quote,
+    };
+  }
   throw new Error(node.type);
 }
 

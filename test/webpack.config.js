@@ -1,4 +1,5 @@
 const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 const LessThemePlugin = require('../plugin');
 
 process.env.NODE_ENV = 'development';
@@ -13,7 +14,7 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.jsx?$/,
+        test: /\.(j|t)sx?$/,
         use: [
           {
             loader: 'babel-loader',
@@ -24,7 +25,7 @@ module.exports = {
                   style: true,
                 }],
               ],
-              presets: ['react-app'],
+              presets: [['react-app', { typescript: true }]],
             },
           },
         ],
@@ -50,6 +51,9 @@ module.exports = {
     ],
   },
   plugins: [
+    new HtmlWebpackPlugin({
+      template: path.join(__dirname, 'index.html'),
+    }),
     new LessThemePlugin({
       variables: ['primary-color'],
       themes: [
