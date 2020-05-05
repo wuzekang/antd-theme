@@ -12,15 +12,11 @@ class ThemeExtractVisitor {
     return this._visitor.visit(root);
   }
 
-  visitCall(node, visitArgs) {
-    if (node.name === 'theme') {
-      visitArgs.visitDeeper = false;
-      this.callback({
-        name: node.varName({ inVarCall: true }),
-        value: node.toCSSCall({ inVarCall: true }),
-        node,
-      });
-    }
+  visitMuteable(node) {
+    this.callback({
+      name: node.varName(),
+      node,
+    });
   }
 }
 

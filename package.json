@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "scripts": {
     "start": "webpack-dev-server --config ./test/webpack.config.js --open",
-    "test": "webpack --config ./test/webpack.config.js",
+    "test": "jest",
     "build": "tsc -d && tsc -b",
     "release": "release-it"
   },
@@ -33,6 +33,7 @@
     "eslint-plugin-react": "^7.19.0",
     "eslint-plugin-react-hooks": "^2.5.1",
     "html-webpack-plugin": "^4.3.0",
+    "jest": "^26.0.1",
     "less-loader": "^5.0.0",
     "react": "^16.8.0",
     "react-color": "^2.18.0",

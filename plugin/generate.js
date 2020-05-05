@@ -1,60 +1,33 @@
 const less = require('less');
-const ColorPalettePlugin = require('./colorPalettePlugin');
+const colorPalette = require('../lib/colorPalette');
 
 const generateTheme = async (variables, exprs) => {
-  const strs = [];
-
-  const keys = Object.keys(exprs);
-
-  keys.forEach(
-    (key) => strs.push(`@${key}: ${exprs[key]};`)
+  const frame = new less.tree.Ruleset(
+    null,
+    Object.keys(variables).map((name) => new less.tree.Declaration(
+      `@${name}`,
+      variables[name].node
+    ))
   );
 
-  strs.push('.theme {');
-
-  keys.forEach(
-    (key) => strs.push(`${key}: @${key};`)
+  frame.functionRegistry = less.functions.functionRegistry.inherit();
+  frame.functionRegistry.add(
+    'colorPalette', (color, index) => new less.tree.Color(colorPalette(color, index))
   );
-
-  strs.push('}');
-
-  const theme = {};
-  await less.render(
-    strs.join('\n'),
-    {
-      plugins: [
-        new ColorPalettePlugin(),
-        {
-          install: (less, pluginManager, functions) => {
-            functions.add('theme', (name) => {
-              if (name instanceof less.tree.Keyword) {
-                return variables[name.value.substr(2)].node;
-              }
-              return name;
-            });
-
-            class VarExtractVisitor {
-              constructor() {
-                this._visitor = new less.visitors.Visitor(this);
-                this.isReplacing = false;
-                this.isPreEvalVisitor = false;
-              }
-
-              run(root) {
-                return this._visitor.visit(root);
-              }
-
-              visitDeclaration(node) {
-                theme[node.name] = node.value.toCSS();
-              }
-            }
-
-            pluginManager.addVisitor(new VarExtractVisitor());
-          },
-        },
-      ],
+  frame.functionRegistry.add(
+    'theme', (name) => {
+      if (name instanceof less.tree.Keyword) {
+        return variables[name.value.substr(2)].node;
+      }
+      return name;
     }
   );
+  const ctx = new less.contexts.Eval({ math: 0 }, [frame]);
+
+  const theme = {};
+  Object.keys(exprs).forEach((name) => {
+    theme[name] = exprs[name].node.eval(ctx).toCSS(ctx);
+  });
   return theme;
 };
 

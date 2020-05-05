@@ -13,7 +13,7 @@ interface ThemeState extends ThemeOptions {
     name?: string;
     variables?: ThemeVariables;
     themes: Theme[];
-    current: Record<string, string>;
+    computed: Record<string, string>;
 }
 declare type ThemeAction = (state: ThemeOptions) => void;
 interface RuntimeValue {
@@ -21,7 +21,7 @@ interface RuntimeValue {
     default: string;
     node: any;
 }
-export declare function setTheme(theme: ThemeState): ComputedTheme;
+export declare function setTheme(theme: ThemeOptions): ComputedTheme;
 interface ThemeProviderProps {
     theme: ThemeOptions;
     onChange?: (value: ThemeOptions) => void;

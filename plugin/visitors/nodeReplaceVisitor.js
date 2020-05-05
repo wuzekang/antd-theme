@@ -1,68 +1,52 @@
 const less = require('less');
+
+const Call = require('../tree/call');
 const Negative = require('../tree/negative');
 const Variable = require('../tree/variable');
+const Muteable = require('../tree/muteable');
 const Operation = require('../tree/operation');
-const Call = require('../tree/call');
+const Condition = require('../tree/condition');
 
 class NodeReplaceVisitor {
-  constructor() {
+  constructor(variables) {
+    this._variables = variables;
     this._visitor = new less.visitors.Visitor(this);
     this.isReplacing = true;
     this.isPreEvalVisitor = true;
-    this.deps = new WeakMap();
   }
 
   run(root) {
     return this._visitor.visit(root);
   }
 
-  visitImport(node) {
-    const isExists = () => {
-      const exists = new WeakMap();
-      const nodes = [node];
-      let i = 0;
-      while (i < nodes.length) {
-        if (exists.get(node)) {
-          return true;
-        }
-
-        const n = nodes[i];
-        ++i;
-
-        if (!this.deps.has(n)) {
-          continue;
-        }
-
-        this.deps.get(n).forEach(
-          (dep) => {
-            exists.set(dep, true);
-            nodes.push(dep);
-          }
-        );
-      }
-      return false;
-    };
-
-    if (isExists()) {
-      return;
-    }
-
-    if (node.root) {
-      node.root.rules.filter(
-        (rule) => rule instanceof less.tree.Import
-      ).forEach(
-        (rule) => {
-          const dep = this.deps.get(node) || [];
-          this.deps.set(node, [...dep, rule]);
-        }
-      );
-    }
-
-    return node;
+  visitCondition(node) {
+    return new Condition(node.op, node.lvalue, node.rvalue, node._index, node.negate);
   }
 
   visitNegative(node) {
     return new Negative(node.value);
+  }
+
+  visitRuleset(node) {
+    if (node.root) {
+      node.rules = node.rules.map(
+        (rule) => {
+          if (rule instanceof less.tree.Declaration) {
+            const name = rule.name.substr(1);
+            if (this._variables && this._variables.has(name)) {
+              rule.value = new Muteable(
+                new Variable(rule.name, rule.getIndex(), rule.fileInfo()),
+                this._variables.get(name),
+                rule.getIndex(),
+                rule.fileInfo()
+              );
+            }
+          }
+          return rule;
+        }
+      );
+    }
+    return node;
   }
 
   visitVariable(node) {

@@ -33,21 +33,6 @@ class RuntimeVariableVisitor {
     this.visited = this.include(this.variables[name].expr, name);
     return node;
   }
-
-  visitCall(node) {
-    if (!node.var) {
-      return node;
-    }
-
-    const name = node.args[0];
-    if (!(name instanceof less.tree.Keyword)) {
-      return node;
-    }
-
-    const variableName = name.value.substr(2);
-    this.visited = this.include(this.variables[variableName], variableName);
-    return node;
-  }
 }
 
 module.exports = RuntimeVariableVisitor;

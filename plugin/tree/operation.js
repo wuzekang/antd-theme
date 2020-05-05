@@ -1,6 +1,6 @@
 
 const less = require('less');
-const Call = require('./call');
+const Muteable = require('./muteable');
 const RuntimeError = require('../runtimeError');
 
 const MATH = {
@@ -16,7 +16,7 @@ class Operation extends less.tree.Operation {
     this.operands = visitor.visitArray(this.operands);
   }
 
-  operate(context, a, b) {
+  _operate(context, a, b) {
     const op = this.op === './' ? '/' : this.op;
     if (a instanceof less.tree.Dimension && b instanceof less.tree.Color) {
       a = a.toColor();
@@ -43,29 +43,29 @@ class Operation extends less.tree.Operation {
     const b = this.operands[1].eval(context);
 
     if (context.isMathOn(this.op)) {
-      if ((a instanceof less.tree.Call && a.var) || (b instanceof less.tree.Call && b.var)) {
-        if (context.inVarCall) {
-          return new Operation(this.op, [a, b], this.isSpaced);
-        }
-
-        const defaultValue = this.operate(
+      if ((a instanceof Muteable) || (b instanceof Muteable)) {
+        const defaultValue = this._operate(
           context,
-          a instanceof Call && a.var ? a.defaultValue() : a,
-          b instanceof Call && b.var ? b.defaultValue() : b
+          a instanceof Muteable ? a.value : a,
+          b instanceof Muteable ? b.value : b
         );
 
-        return new Call(
-          'theme',
-          [
-            new Operation(this.op, [a, b], this.isSpaced),
-            defaultValue,
-          ],
+        return new Muteable(
+          new Operation(
+            this.op,
+            [
+              a instanceof Muteable ? a.origin : a,
+              b instanceof Muteable ? b.origin : b,
+            ],
+            this.isSpaced
+          ),
+          defaultValue,
           this.getIndex(),
           this.fileInfo()
         );
       }
 
-      return this.operate(context, a, b);
+      return this._operate(context, a, b);
     }
 
     return new Operation(this.op, [a, b], this.isSpaced);

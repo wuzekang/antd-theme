@@ -1,27 +1,56 @@
 const less = require('less');
-
-const MATH = {
-  ALWAYS: 0,
-  PARENS_DIVISION: 1,
-  PARENS: 2,
-  STRICT_LEGACY: 3,
-};
+const Muteable = require('../tree/muteable');
+const colorPalette = require('../../lib/colorPalette');
 
 class ResolveVisitor {
   constructor(runtimeVariableNames, variables) {
     this._visitor = new less.visitors.Visitor(this);
     this.isReplacing = true;
     this.lookup = new Set();
-    this.functions = new Set();
     this.variables = variables;
-    this.context = new less.contexts.Eval();
     runtimeVariableNames.forEach(
       (name) => this.lookup.add(name)
     );
+
+    const frame = new less.tree.Ruleset(
+      null,
+      Object.keys(variables).map(
+        (name) => new less.tree.Declaration(
+          `@${name}`, this.variables[name].node
+        )
+      )
+    );
+    frame.functionRegistry = less.functions.functionRegistry.inherit();
+    frame.functionRegistry.add(
+      'colorPalette', (color, index) => new less.tree.Color(colorPalette(color, index))
+    );
+
+    const context = new less.contexts.Eval({ math: 0 }, [frame]);
+
+    this._context = context;
   }
 
   run(root) {
-    return this._visitor.visit(new less.tree.Value([root]));
+    const context = this._context;
+    const value = this._visitor
+      .visit(new less.tree.Value([root]))
+      .eval(this._context);
+
+    if (value instanceof Muteable) {
+      return {
+        runtime: true,
+        expr: value.origin,
+        node: value.value,
+        value: value.value.toCSS(context),
+      };
+    }
+
+    return {
+      runtime: false,
+      expr: null,
+      node: value,
+      value: value.toCSS(context),
+    };
   }
 
   visit(root) {
@@ -36,71 +65,21 @@ class ResolveVisitor {
     return node;
   }
 
-  visitExpression(node) {
-    const { context } = this;
-
-    const resolve = () => {
-      let returnValue;
-      const mathOn = context.isMathOn();
-
-      const inParenthesis = node.parens
-          && (context.math !== MATH.STRICT_LEGACY || !node.parensInOp);
-
-      let doubleParen = false;
-      if (inParenthesis) {
-        context.inParenthesis();
-      }
-      if (node.value.length > 1) {
-        return node;
-      }
-      if (node.value.length === 1) {
-        if (node.value[0].parens && !node.value[0].parensInOp && !context.inCalc) {
-          doubleParen = true;
-        }
-        // eslint-disable-next-line prefer-destructuring
-        returnValue = node.value[0];
-      }
-      else {
-        return node;
-      }
-      if (inParenthesis) {
-        context.outOfParenthesis();
-      }
-      if (node.parens && node.parensInOp && !mathOn && !doubleParen
-          && (!(returnValue instanceof less.tree.Dimension))) {
-        return node;
-      }
-      return returnValue || node;
-    };
-
-    const resolved = resolve(node);
-    if (resolved !== node) {
-      return this.visit(resolved);
-    }
-    return node;
-  }
-
   visitVariable(node) {
     const name = node.name.substr(1);
     if (this.lookup.has(name)) {
-      return node;
+      return new Muteable(
+        node,
+        this.variables[name].node,
+        node._index,
+        node._fileInfo
+      );
     }
     return this.visit(this.variables[name].expr);
   }
 
-  visitCall(node) {
-    if (!node.var) {
-      this.functions.add(node.name);
-      return node;
-    }
-
-    const name = node.args[0];
-    if (!(name instanceof less.tree.Keyword)) {
-      return this.visit(name);
-    }
-
-    const variableName = name.value.substr(2);
-    return this.visit(new less.tree.Variable(`@${variableName}`));
+  visitMuteable(node) {
+    return this.visit(node.origin);
   }
 }
 

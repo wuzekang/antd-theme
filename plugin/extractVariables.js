@@ -1,6 +1,7 @@
 const less = require('less');
 const NodeReplaceVisitor = require('./visitors/nodeReplaceVisitor');
 
+
 const extractVariables = (input, options) => new Promise(
   (resolve, reject) => {
     less.parse(input, options, (err, root, imports, options) => {
@@ -19,8 +20,8 @@ const extractVariables = (input, options) => new Promise(
         const variables = root.variables();
         const result = Object.keys(variables).map(
           (key) => {
-            const variable = variables[key];
-            const { value } = variable.eval(ctx);
+            const variable = root.variable(key);
+            const value = variable.value.eval(ctx);
 
             return {
               name: key.substr(1),

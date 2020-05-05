@@ -1,4 +1,5 @@
 const less = require('less');
+const Muteable = require('./tree/muteable');
 
 function serialize(node) {
   if (node instanceof less.tree.Call) {
@@ -87,6 +88,43 @@ function serialize(node) {
       quote: node.quote,
     };
   }
+
+  if (node instanceof less.tree.Condition) {
+    return {
+      type: node.type,
+      op: node.op,
+      lvalue: serialize(node.lvalue),
+      rvalue: serialize(node.rvalue),
+      negate: node.negate,
+    };
+  }
+
+  if (node instanceof less.tree.Anonymous) {
+    return {
+      type: node.type,
+      value: node.value,
+    };
+  }
+
+  if (node instanceof less.tree.URL) {
+    return {
+      type: node.type,
+      value: serialize(node.value),
+    };
+  }
+  if (node instanceof Muteable) {
+    return {
+      type: node.type,
+      origin: serialize(node.origin),
+      value: serialize(node.value),
+    };
+  }
+
+  if (!(node instanceof less.tree.Node)) {
+    return node;
+  }
+
+
   throw new Error(node.type);
 }
 

@@ -1,18 +1,10 @@
 const less = require('less');
-
-const { Node } = less.tree;
-const { Anonymous } = less.tree;
-const FunctionCaller = less.functions.functionCaller;
-const { createHash } = require('crypto');
 const RuntimeError = require('../runtimeError');
+const Muteable = require('./muteable');
 
-const encrypt = (algorithm, content) => {
-  const hash = createHash(algorithm);
-  hash.update(content);
-  return hash.digest('hex');
-};
+const { Node, Anonymous } = less.tree;
+const FunctionCaller = less.functions.functionCaller;
 
-const sha1 = (content) => encrypt('sha1', content);
 
 //
 // A function call node.
@@ -50,7 +42,6 @@ class Call extends less.tree.Call {
     /**
      * Turn off math for calc(), and switch back on for evaluating nested functions
      */
-    // console.log('call e', this.name);
     const currentVarContext = context.inVarCall;
     context.inVarCall = this.var || context.inVarCall;
 
@@ -61,7 +52,7 @@ class Call extends less.tree.Call {
       context.enterCalc();
     }
 
-    const args = this.args.map((a) => a.eval(context));
+    const args = this.args.map((a) => a instanceof Node ? a.eval(context) : a);
 
     if (this.calc || context.inCalc) {
       context.exitCalc();
@@ -77,30 +68,34 @@ class Call extends less.tree.Call {
       try {
         const { func } = funcCaller;
         funcCaller.func = (...args) => {
-          if (this.name !== '_SELF' && args.some((arg) => arg instanceof less.tree.Call && arg.var)) {
-            if (context.inVarCall) {
-              return new Call(this.name, args, this.getIndex(), this.fileInfo());
-            }
+          if (
+            this.name !== '_SELF'
+            && args.some((arg) => (arg instanceof Muteable))
+          ) {
             const defaultValue = func(
               ...args.map(
                 (arg) => {
-                  if (arg instanceof less.tree.Call && arg.var) {
-                    return arg.defaultValue();
+                  if (arg instanceof Muteable) {
+                    return arg.value;
                   }
                   return arg;
                 }
               )
             );
 
-            return new Call(
-              'theme',
-              [
-                new Call(
-                  this.name,
-                  args
-                ),
-                defaultValue,
-              ],
+            return new Muteable(
+              new Call(
+                this.name,
+                args.map(
+                  (arg) => {
+                    if (arg instanceof Muteable) {
+                      return arg.origin;
+                    }
+                    return arg;
+                  }
+                )
+              ),
+              defaultValue,
               this.getIndex(),
               this.fileInfo()
             );
@@ -140,97 +135,11 @@ class Call extends less.tree.Call {
     return new Call(this.name, args, this.getIndex(), this.fileInfo());
   }
 
-  genCSSCall(context, output) {
-    output.add(`${this.name}(`, this.fileInfo(), this.getIndex());
-
-    for (let i = 0; i < this.args.length; ++i) {
-      this.args[i].genCSS(context, output);
-      if (i + 1 < this.args.length) {
-        output.add(', ');
-      }
-    }
-
-    output.add(')');
-  }
-
-  toCSSCall(context) {
-    const strs = [];
-    this.genCSSCall(context, {
-      add(chunk) {
-        strs.push(chunk);
-      },
-      isEmpty() {
-        return strs.length === 0;
-      },
-    });
-    return strs.join('');
-  }
-
-  varName(context) {
-    const name = this.args[0];
-    const strs = [];
-    context.inVarCall = true;
-    name.genCSS(context, {
-      add(chunk) {
-        strs.push(chunk);
-      },
-      isEmpty() {
-        return strs.length === 0;
-      },
-    });
-    context.inVarCall = false;
-    const chunk = strs.join('');
-    if (name instanceof less.tree.Keyword) {
-      const camelCaseName = chunk.split('-').reduce(
-        (acc, val) => `${acc}${acc ? val.replace(/^\S/, (s) => s.toUpperCase()) : val}`,
-        ''
-      );
-      return camelCaseName;
-    }
-    const hashName = sha1(chunk).substr(0, 16);
-    return hashName;
-  }
-
-  defaultValue() {
-    if (!this.var || this.args.length <= 1) {
-      return null;
-    }
-    if (this.args.length > 2) {
-      return new less.tree.Value(this.args.slice(1));
-    }
-    return this.args[1];
-  }
-
-  genCSSVar(context, output) {
-    const { inVarCall } = context;
-    if (inVarCall) {
-      this.genCSSCall(context, output);
+  compare(other) {
+    if (!this.var) {
       return;
     }
-
-    output.add('"[theme:', this.fileInfo(), this.getIndex());
-    output.add(this.varName(context));
-
-    const defaultValue = this.defaultValue();
-    if (defaultValue) {
-      output.add(',default:');
-      defaultValue.genCSS(context, output);
-    }
-    output.add(']"');
-  }
-
-  genCSS(context, output) {
-    if (this.var) {
-      if (context) {
-        this.genCSSVar(context, output);
-      }
-      else {
-        this.defaultValue().genCSS(context, output);
-      }
-    }
-    else {
-      this.genCSSCall(context, output);
-    }
+    return Node.compare(this.defaultValue(), other);
   }
 }
 

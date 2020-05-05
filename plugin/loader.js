@@ -1,10 +1,8 @@
 const loaderUtils = require('loader-utils');
-const ColorPalettePlugin = require('./colorPalettePlugin');
-const LessThemePlugin = require('./lessThemePlugin');
-const { themeVariable, lessLoaderOptions } = require('./constants');
+const path = require('path');
+const { lessLoaderOptions } = require('./constants');
 
-const loadedThemedStylesPath = require.resolve('@microsoft/load-themed-styles');
-
+const loadedThemedStylesPath = path.join(__dirname, '../lib/loadThemedStyles.js');
 
 function loader(content) {
   const { namedExport, async = false } = loaderUtils.getOptions(this) || {};
@@ -40,17 +38,7 @@ function pitch() {
       if (loader.path === require.resolve('less-loader')) {
         return {
           ...loader,
-          options: {
-            ...loader.options,
-            ...this._compiler[lessLoaderOptions],
-            javascriptEnabled: true,
-            plugins: [
-              new ColorPalettePlugin(),
-              new LessThemePlugin((name, value) => {
-                this._compiler.hooks[themeVariable].call(name, value);
-              }),
-            ],
-          },
+          options: this._compiler.hooks[lessLoaderOptions].call(this.options),
         };
       }
       return loader;

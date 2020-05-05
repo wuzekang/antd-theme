@@ -6,9 +6,13 @@ const dimensionRegexp = /^([+-]?\d*\.?\d+)(%|[a-z_]+)?/;
 const colorKeywordRegexp = /^[_A-Za-z-][_A-Za-z0-9-]+/;
 const callNameRegexp = /^([\w-]+|%|progid:[\w.]+)\(/;
 const colorRegexp = /^#([A-Fa-f0-9]{8}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{3,4})([\w.#[])?/;
+const anonymousRegexp = /^([^.#@\$+\/'"*`(;{}-]*)/;
+const keywordRegexp = /^\[?(?:[\w-]|\\(?:[A-Fa-f0-9]{1,6} ?|[^A-Fa-f0-9]))+\]?/;
 
 class Input {
   private pos: number = 0;
+
+  private stack: number[] = [];
 
   constructor(readonly input: string) {}
 
@@ -18,6 +22,16 @@ class Input {
       this.pos += matched[0].length;
     }
     return matched;
+  }
+
+  save() {
+    this.stack.push(this.pos);
+  }
+
+  restore() {
+    if (this.stack.length > 0) {
+      this.pos = this.stack.pop() as number;
+    }
   }
 
   string(s: string) {
@@ -47,7 +61,7 @@ class Parser {
 
   parse() {
     this.input.skipWhitespace();
-    const result = this.dimension() || this.color() || this.colorKeyword() || this.call();
+    const result = this.dimension() || this.color() || this.colorKeyword() || this.call() || this.anonymous();
     this.input.skipWhitespace();
     if (this.input.end()) {
       return result;
@@ -72,6 +86,7 @@ class Parser {
   //     red blue green
   //
   colorKeyword() {
+    this.input.save();
     const matched = this.input.match(colorKeywordRegexp);
     if (!matched) {
       return;
@@ -80,6 +95,7 @@ class Parser {
     if (color) {
       return color;
     }
+    this.input.restore();
   }
 
   //
@@ -123,6 +139,20 @@ class Parser {
     const rgb = this.input.match(colorRegexp);
     if (rgb && !rgb[2]) {
       return new tree.Color(rgb[1], undefined, rgb[0]);
+    }
+  }
+
+  anonymous() {
+    const matched = this.input.match(anonymousRegexp);
+    if (matched) {
+      return new tree.Anonymous(matched[0]);
+    }
+  }
+
+  keyword() {
+    const k = this.input.match(keywordRegexp);
+    if (k) {
+      return new tree.Keyword(k[0]);
     }
   }
 }

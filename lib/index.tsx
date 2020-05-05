@@ -1,5 +1,5 @@
-import { loadTheme, ITheme as ComputedTheme } from '@microsoft/load-themed-styles';
 import React from 'react';
+import { loadTheme, ITheme as ComputedTheme } from './loadThemedStyles';
 import serializedVariableGroups from './themes';
 import Parser from './parser';
 
@@ -23,7 +23,7 @@ interface ThemeState extends ThemeOptions {
   name?: string;
   variables?: ThemeVariables;
   themes: Theme[];
-  current: Record<string, string>;
+  computed: Record<string, string>;
 }
 
 type ThemeAction = (state: ThemeOptions) => void;
@@ -31,6 +31,9 @@ type ThemeAction = (state: ThemeOptions) => void;
 const ThemeContext = React.createContext<[ThemeState, ThemeAction] | undefined>(undefined);
 
 const deserialize = (node) => {
+  if (typeof node === 'boolean') {
+    return node;
+  }
   switch (node.type) {
   case 'Call':
     return new tree.Call(node.name, node.args.map(deserialize));
@@ -48,6 +51,36 @@ const deserialize = (node) => {
     return new tree.Value(node.value.map(deserialize));
   case 'Expression':
     return new tree.Expression(node.value.map(deserialize), node.noSpacing);
+  case 'Keyword':
+    return new tree.Keyword(node.value);
+  case 'Condition':
+    return new tree.Condition(
+      node.op,
+      deserialize(node.lvalue),
+      deserialize(node.rvalue),
+      null,
+      node.negate
+    );
+  case 'Color':
+    return new tree.Color(
+      node.rgb,
+      node.alpha,
+      node.value
+    );
+  case 'Url':
+    return new tree.URL(
+      node.value
+    );
+  case 'Anonymous':
+    return new tree.Anonymous(
+      node.value
+    );
+  case 'Quoted':
+    return new tree.Quoted(
+      node.quote,
+      node.value,
+      node.escaped
+    );
   default:
     throw new Error(`unexcepted type ${node.type}`);
   }
@@ -95,6 +128,7 @@ function parseVariables(variables: Record<string, string> | undefined) {
       result[name] = new Parser(variables[name]).parse();
     }
   );
+
   return result;
 }
 
@@ -138,7 +172,7 @@ function compute(
   return computed;
 }
 
-export function setTheme(theme: ThemeState) {
+export function setTheme(theme: ThemeOptions) {
   const variables = theme.name ? compute(lookup.get(theme.name), theme.variables) : {};
   loadTheme(variables);
   return variables;
@@ -183,7 +217,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ theme, onChange, c
     () => ({
       ...theme,
       themes,
-      current: variables,
+      computed: variables,
     }),
     [theme, variables]
   );
