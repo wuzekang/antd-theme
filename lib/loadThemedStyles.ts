@@ -212,7 +212,7 @@ export function flush(): void {
   measure(() => {
     const styleArrays: ThemableArray[] = _themeState.runState.buffer.slice();
     _themeState.runState.buffer = [];
-    const mergedStyleArray: ThemableArray = [].concat.apply([], styleArrays);
+    const mergedStyleArray: ThemableArray = ([] as ThemableArray).concat.apply([], styleArrays);
     if (mergedStyleArray.length > 0) {
       applyThemableStyles(mergedStyleArray);
     }
@@ -223,7 +223,7 @@ export function flush(): void {
  * register async loadStyles
  */
 function asyncLoadStyles(): number {
-  return setTimeout(() => {
+  return window.setTimeout(() => {
     _themeState.runState.flushTimer = 0;
     flush();
   }, 0);
@@ -291,7 +291,7 @@ function reloadStyles(): void {
     }
     if (themableStyles.length > 0) {
       clearStyles(ClearStyleOptions.onlyThemable);
-      applyThemableStyles([].concat.apply([], themableStyles));
+      applyThemableStyles(([] as ThemableArray).concat.apply([], themableStyles));
     }
   }
 }
