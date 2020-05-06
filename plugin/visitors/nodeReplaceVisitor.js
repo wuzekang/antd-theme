@@ -8,28 +8,90 @@ const Operation = require('../tree/operation');
 const Condition = require('../tree/condition');
 
 class NodeReplaceVisitor {
-  constructor(variables) {
+  constructor(
+    functionRegistry = less.functions.functionRegistry,
+    variables = new Map()
+  ) {
+    this._functionRegistry = functionRegistry;
     this._variables = variables;
     this._visitor = new less.visitors.Visitor(this);
     this.isReplacing = true;
     this.isPreEvalVisitor = true;
+    this._context = new less.contexts.Eval();
   }
 
   run(root) {
-    return this._visitor.visit(root);
+    const result = this._visitor.visit(root);
+    return result;
   }
 
-  visitCondition(node) {
-    return new Condition(node.op, node.lvalue, node.rvalue, node._index, node.negate);
+  _evalRuleset(ruleset) {
+    const context = this._context;
+
+    ruleset.functionRegistry = ((frames) => {
+      let i = 0;
+      const n = frames.length;
+      let found;
+      for (; i !== n; ++i) {
+        found = frames[i].functionRegistry;
+        if (found) {
+          return found;
+        }
+      }
+      return this._functionRegistry;
+    })(context.frames).inherit();
+
+    // push the current ruleset to the frames stack
+    const ctxFrames = context.frames;
+    ctxFrames.unshift(ruleset);
+
+    // Evaluate imports
+    if (ruleset.root || ruleset.allowImports || !ruleset.strictImports) {
+      ruleset.evalImports(context);
+    }
+
+    // Store the frames around mixin definitions,
+    // so they can be evaluated like closures when the time comes.
+    ruleset.rules = ruleset.rules.map(
+      (rule) => {
+        if (rule.evalFirst) {
+          return rule.eval(context);
+        }
+        return rule;
+      }
+    );
+
+    return ruleset;
   }
 
-  visitNegative(node) {
-    return new Negative(node.value);
+  _cloneRuleset(node) {
+    const rules = node.rules ? [...node.rules] : null;
+
+    const ruleset = new less.tree.Ruleset(
+      node.selectors ? [...node.selectors] : node.selectors,
+      rules,
+      node.strictImports,
+      node.visibilityInfo()
+    );
+
+    ruleset.originalRuleset = node;
+    ruleset.root = node.root;
+    ruleset.firstRoot = node.firstRoot;
+    ruleset.allowImports = node.allowImports;
+
+    if (node.debugInfo) {
+      ruleset.debugInfo = node.debugInfo;
+    }
+
+    return ruleset;
   }
 
   visitRuleset(node) {
-    if (node.root) {
-      node.rules = node.rules.map(
+    const ruleset = node.root ? node : this._cloneRuleset(node);
+    this._evalRuleset(ruleset);
+
+    if (ruleset.root) {
+      ruleset.rules = ruleset.rules.map(
         (rule) => {
           if (rule instanceof less.tree.Declaration) {
             const name = rule.name.substr(1);
@@ -46,8 +108,22 @@ class NodeReplaceVisitor {
         }
       );
     }
-    return node;
+
+    return ruleset;
   }
+
+  visitRulesetOut() {
+    this._context.frames.shift();
+  }
+
+  visitCondition(node) {
+    return new Condition(node.op, node.lvalue, node.rvalue, node._index, node.negate);
+  }
+
+  visitNegative(node) {
+    return new Negative(node.value);
+  }
+
 
   visitVariable(node) {
     return new Variable(node.name, node._index, node._fileInfo);

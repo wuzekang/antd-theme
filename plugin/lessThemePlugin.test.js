@@ -26,11 +26,6 @@ const initialize = async (options) => {
     javascriptEnabled: true,
     plugins: [
       new ColorPalettePlugin(),
-      // {
-      //   install: (_, pluginManager) => {
-      //     pluginManager.addVisitor(new NodeReplaceVisitor(new Map()));
-      //   },
-      // },
     ],
   };
 
@@ -118,30 +113,31 @@ const initialize = async (options) => {
     mergedVariableGroups,
     changedVariableNames,
     resolveVisitors,
-    isRuntimeVariable,
   };
 };
 
-const main = async () => {
+const options = {
+  variables: ['primary-color'],
+  themes: [
+    {
+      name: 'dark',
+      filename: require.resolve('antd/lib/style/themes/dark.less'),
+    },
+    {
+      name: 'compact',
+      filename: require.resolve('antd/lib/style/themes/compact.less'),
+    },
+    {
+      name: 'aliyun',
+      filename: require.resolve('@ant-design/aliyun-theme/index.less'),
+    },
+  ],
+};
+
+const compileThemes = async (options) => {
   const {
-    mergedVariableGroups, changedVariableNames, resolveVisitors, isRuntimeVariable,
-  } = await initialize({
-    variables: ['primary-color'],
-    themes: [
-      {
-        name: 'dark',
-        filename: require.resolve('antd/lib/style/themes/dark.less'),
-      },
-      {
-        name: 'compact',
-        filename: require.resolve('antd/lib/style/themes/compact.less'),
-      },
-      {
-        name: 'aliyun',
-        filename: require.resolve('@ant-design/aliyun-theme/index.less'),
-      },
-    ],
-  });
+    mergedVariableGroups, changedVariableNames, resolveVisitors,
+  } = await initialize(options);
 
   const input = [
     '@import "node_modules/antd/lib/button/style/index.less";',
@@ -184,41 +180,21 @@ const main = async () => {
     resolvedExprGroups[themeName] = resolvedExprs;
   });
 
-
-  const source = [];
-  defineRuntimeExprs.forEach(
-    (value, key) => {
-      source.push(`var _${key} = ${value};`);
-    }
-  );
-
-  source.push('var themes = {');
-
-  const themeSource = Object.keys(resolvedExprGroups).map(
-    (themeName) => {
-      const source = [];
-      source.push(`${JSON.stringify(themeName)}: {`);
-      const resolvedExprs = resolvedExprGroups[themeName];
-      const outputVariables = Object.keys(resolvedExprs).map(
-        (name) => {
-          const value = JSON.stringify(resolvedExprs[name].value);
-          const resolvedExpr = resolvedExprs[name];
-          if (resolvedExpr.runtime) {
-            return (`${JSON.stringify(name)}: { expr: _${resolvedExpr.hash}, default: ${value} }`);
-          }
-          return (`${JSON.stringify(name)}: ${value}`);
-        }
-      );
-      source.push(outputVariables.join(',\n'));
-      source.push('}');
-      return source.join('\n');
-    }
-  );
-
-  source.push(themeSource.join(', '));
-  source.push('};');
-  source.push('module.exports = themes;');
-  const content = source.join('\n');
+  return {
+    css,
+    resolvedExprGroups,
+  };
 };
 
-test('e2e', main);
+test('compile themes', async () => {
+  const { css, resolvedExprGroups } = await compileThemes(options);
+  expect(css.length).toBeGreaterThan(0);
+
+  Object.keys(resolvedExprGroups).forEach(
+    (themeName) => {
+      const resolvedExprs = resolvedExprGroups[themeName];
+      expect(Object.keys(resolvedExprs).length).toBeGreaterThan(0);
+      expect(Object.values(resolvedExprs).filter()).toBeGreaterThan(0);
+    }
+  );
+});

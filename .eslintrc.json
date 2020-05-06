@@ -5,7 +5,8 @@
   },
   "extends": [
     "plugin:react/recommended",
-    "airbnb"
+    "airbnb",
+    "plugin:jest/recommended"
   ],
   "globals": {
     "Atomics": "readonly",
@@ -21,7 +22,8 @@
   },
   "plugins": [
     "react",
-    "@typescript-eslint"
+    "@typescript-eslint",
+    "jest"
   ],
   "rules": {
     "react/prop-types": "off",
@@ -99,6 +101,18 @@
     "class-methods-use-this": "off"
   },
   "overrides": [
+    {
+      "files": [
+        "*.test.js"
+      ],
+      "env": {
+        "jest/globals": true
+      },
+      "rules": {
+        "no-restricted-syntax": "off",
+        "no-await-in-loop": "off"
+      }
+    },
     {
       "files": [
         "*.d.ts"

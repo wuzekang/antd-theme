@@ -1,11 +1,13 @@
 
 const less = require('less');
 const ColorPalettePlugin = require('../colorPalettePlugin');
+const NodeReplaceVisitor = require('./nodeReplaceVisitor');
 const MixinExpansionVisitor = require('./mixinExpansionVisitor');
 const GuardTransformVisitor = require('./guardTransformVisitor');
 
 const mixinExpansionPlugin = {
   install(_, pluginManager, functionRegistry) {
+    pluginManager.addVisitor(new NodeReplaceVisitor(functionRegistry));
     pluginManager.addVisitor(new MixinExpansionVisitor(functionRegistry));
     pluginManager.addVisitor(new GuardTransformVisitor(functionRegistry));
   },
@@ -38,29 +40,21 @@ const compileNormal = async (input) => {
   return css;
 };
 
-const compileResultEqual = async (input) => {
-  const [result1, result2] = await Promise.all([
-    compileExpansion(input),
-    compileNormal(input),
-  ]);
+const compile = (input) => Promise.all([
+  compileExpansion(input),
+  compileNormal(input),
+]);
 
-  expect(result1).toBe(result2);
-};
-
-test('render styles - button', () => {
-  compileResultEqual('@import "node_modules/antd/lib/button/style/index.less";');
-});
-
-test('render styles - table', () => {
-  compileResultEqual('@import "node_modules/antd/lib/table/style/index.less";');
-});
-
-
-test('render styles - date-picker', () => {
-  compileResultEqual('@import "node_modules/antd/lib/date-picker/style/index.less";');
-});
-
-
-test('render styles - time-picker', () => {
-  compileResultEqual('@import "node_modules/antd/lib/time-picker/style/index.less";');
-});
+[
+  'button',
+  'table',
+  'date-picker',
+  'time-picker',
+].forEach(
+  (name) => {
+    test(`render styles - ${name}`, async () => {
+      const [r1, r2] = await compile(`@import "node_modules/antd/lib/${name}/style/index.less";`);
+      expect(r1).toBe(r2);
+    });
+  }
+);
