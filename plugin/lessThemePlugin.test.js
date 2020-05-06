@@ -1,4 +1,6 @@
 const less = require('less');
+const fs = require('fs');
+const pLimit = require('p-limit');
 const LessThemePlugin = require('./lessThemePlugin');
 const ColorPalettePlugin = require('./colorPalettePlugin');
 const extractVariables = require('./extractVariables');
@@ -6,6 +8,9 @@ const RuntimeVariableVisitor = require('./visitors/runtimeVariableVisitor');
 const ResolveVisitor = require('./visitors/resolveVisitor');
 const serialize = require('./serialize');
 const sha1 = require('./sha1');
+
+const limit = pLimit(1);
+
 
 const defaultThemeName = 'default';
 
@@ -134,15 +139,11 @@ const options = {
   ],
 };
 
-const compileThemes = async (options) => {
+const compileThemes = async (options, input) => {
   const {
     mergedVariableGroups, changedVariableNames, resolveVisitors,
   } = await initialize(options);
 
-  const input = [
-    '@import "node_modules/antd/lib/button/style/index.less";',
-    '@import "node_modules/antd/lib/tree/style/index.less";',
-  ].join('\n');
 
   const extractedExprs = new Map();
 
@@ -153,7 +154,10 @@ const compileThemes = async (options) => {
         (expr) => {
           extractedExprs[expr.name] = expr;
         },
-        changedVariableNames
+        {
+          has: (key) => changedVariableNames.has(key),
+          get: (key) => changedVariableNames.get(key),
+        }
       ),
     ],
   });
@@ -179,22 +183,102 @@ const compileThemes = async (options) => {
     );
     resolvedExprGroups[themeName] = resolvedExprs;
   });
-
-  return {
-    css,
-    resolvedExprGroups,
-  };
 };
 
-test('compile themes', async () => {
-  const { css, resolvedExprGroups } = await compileThemes(options);
-  expect(css.length).toBeGreaterThan(0);
 
-  Object.keys(resolvedExprGroups).forEach(
-    (themeName) => {
-      const resolvedExprs = resolvedExprGroups[themeName];
-      expect(Object.keys(resolvedExprs).length).toBeGreaterThan(0);
-      expect(Object.values(resolvedExprs).filter()).toBeGreaterThan(0);
+const components = [
+  'affix',
+  'alert',
+  'anchor',
+  'auto-complete',
+  'avatar',
+  'back-top',
+  'badge',
+  'breadcrumb',
+  'button',
+  'calendar',
+  'carousel',
+  'card',
+  'cascader',
+  'checkbox',
+  'col',
+  'collapse',
+  'comment',
+  'config-provider',
+  'date-picker',
+  'descriptions',
+  'divider',
+  'drawer',
+  'dropdown',
+  'empty',
+  'form',
+  'grid',
+  'icon',
+  'input',
+  'input-number',
+  'layout',
+  'list',
+  'locale-provider',
+  'mentions',
+  'menu',
+  'message',
+  'modal',
+  'notification',
+  'page-header',
+  'pagination',
+  'popconfirm',
+  'popover',
+  'progress',
+  'radio',
+  'rate',
+  'result',
+  'row',
+  'select',
+  'skeleton',
+  'slider',
+  'space',
+  'spin',
+  'statistic',
+  'steps',
+  'switch',
+  'table',
+  'tabs',
+  'tag',
+  'timeline',
+  'time-picker',
+  'tooltip',
+  'transfer',
+  'tree',
+  'tree-select',
+  'typography',
+  'upload',
+  'version',
+];
+
+describe('compile themes', () => {
+  const tests = components.map(
+    (name) => ({
+      name,
+      filename: require.resolve(`antd/lib/${name}/style/index`).replace(/js$/, 'less'),
+    })
+  ).filter(
+    ({ filename }) => fs.existsSync(filename)
+  ).map(
+    ({ name, filename }) => ({
+      name,
+      compiled: limit(
+        () => {
+          const input = (`@import "${filename}";`);
+          return compileThemes(options, input);
+        }
+      ),
+    })
+  );
+
+  tests.forEach(
+    ({ name, compiled }) => {
+      // eslint-disable-next-line jest/expect-expect
+      test(name, () => compiled);
     }
   );
 });

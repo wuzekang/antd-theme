@@ -47,6 +47,7 @@ const compile = (input) => Promise.all([
 
 [
   'button',
+  'notification',
   'table',
   'date-picker',
   'time-picker',

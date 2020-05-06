@@ -28,17 +28,7 @@ class GuardTransformVisitor {
 
     const { selectors } = ruleset;
     const selector = selectors && selectors.find(
-      ({ condition }) => {
-        if (!condition) {
-          return false;
-        }
-        const lvalue = condition.lvalue.eval(this._context);
-        const rvalue = condition.rvalue.eval(this._context);
-        if ((lvalue instanceof Muteable) || (rvalue instanceof Muteable)) {
-          return true;
-        }
-        return false;
-      }
+      ({ condition }) => condition && condition.eval(this._context) instanceof Muteable
     );
 
     if (selector) {
