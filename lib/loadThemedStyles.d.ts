@@ -6,6 +6,7 @@ export interface IThemingInstruction {
     name?: string;
     theme?: string;
     defaultValue?: string;
+    semi?: string;
     rawString?: string;
 }
 export declare type ThemableArray = IThemingInstruction[];

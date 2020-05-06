@@ -6,5 +6,7 @@ declare class Parser {
     colorKeyword(): any;
     call(): any;
     color(): any;
+    anonymous(): any;
+    keyword(): any;
 }
 export default Parser;

@@ -1,5 +1,5 @@
-import { ITheme as ComputedTheme } from '@microsoft/load-themed-styles';
 import React from 'react';
+import { ITheme as ComputedTheme } from './loadThemedStyles';
 declare type ThemeVariables = Record<string, any>;
 interface Theme {
     name: string;
