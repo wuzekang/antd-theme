@@ -50,7 +50,10 @@ class AntdThemePlugin {
             (expr) => {
               extractedExprs[expr.name] = expr;
             },
-            changedVariableNames
+            {
+              has: (key) => changedVariableNames.has(key),
+              get: (key) => changedVariableNames.get(key),
+            }
           ),
         ],
       })
