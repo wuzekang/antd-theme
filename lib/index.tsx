@@ -191,21 +191,35 @@ interface ThemeProviderProps {
   onChange?: (value: ThemeOptions) => void;
 }
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ theme, onChange, children }) => {
-  const rendering = React.useRef(false);
+  const running = React.useRef<() => void>();
+  const pending = React.useRef<() => void>();
 
   React.useEffect(
     () => {
-      if (rendering.current) {
-        return;
-      }
-      rendering.current = true;
-      setTimeout(() => {
-        const variables = compute(theme);
+      pending.current = () => {
         setTimeout(() => {
+          const variables = compute(theme);
           loadTheme(variables);
+          pending.current = undefined;
         }, 0);
-        rendering.current = false;
-      }, 0);
+      };
+
+      const run = () => {
+        if (running.current) {
+          return;
+        }
+        if (!pending.current) {
+          return;
+        }
+
+        running.current = pending.current;
+        pending.current = undefined;
+        running.current();
+        running.current = undefined;
+        run();
+      }
+
+      run();
     },
     [theme.name, theme.variables]
   );

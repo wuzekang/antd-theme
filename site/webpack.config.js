@@ -6,7 +6,10 @@ process.env.NODE_ENV = 'development';
 
 module.exports = {
   mode: 'development',
-  entry: './test/index.jsx',
+  entry: './site/index.jsx',
+  resolve: {
+    extensions: ['.js', '.jsx', '.json'],
+  },
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
@@ -35,6 +38,7 @@ module.exports = {
         use: [
           {
             loader: LessThemePlugin.loader,
+            // loader: 'style-loader',
           },
           {
             loader: 'css-loader',
