@@ -1,18 +1,17 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const LessThemePlugin = require('../plugin');
 
-process.env.NODE_ENV = 'development';
-
 module.exports = {
-  mode: 'development',
+  mode: process.env.NODE_ENV,
   entry: './site/index.jsx',
   resolve: {
     extensions: ['.js', '.jsx', '.json'],
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: 'bundle.js',
+    filename: '[chunkhash].bundle.js',
   },
   module: {
     rules: [
@@ -55,6 +54,7 @@ module.exports = {
     ],
   },
   plugins: [
+    new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
       template: path.join(__dirname, 'index.html'),
     }),
