@@ -1,5 +1,5 @@
 import React from 'react';
-import { loadTheme, ITheme as ComputedTheme } from './loadThemedStyles';
+import { loadTheme, ITheme as ComputedTheme } from './loadThemedStyles.js';
 import serializedVariableGroups from './themes';
 import Parser from './parser';
 
@@ -23,7 +23,6 @@ interface ThemeState extends ThemeOptions {
   name?: string;
   variables?: ThemeVariables;
   themes: Theme[];
-  computed: Record<string, string>;
 }
 
 type ThemeAction = (state: ThemeOptions) => void;
@@ -133,20 +132,28 @@ function parseVariables(variables: Record<string, string> | undefined) {
 }
 
 function compute(
-  theme: Theme | undefined,
-  _variables: Record<string, string> | undefined
+  options: ThemeOptions
 ): ComputedTheme {
-  const computed: ComputedTheme = {};
+  const { name, variables: _variables } = options;
+  
+  const computed: ComputedTheme = new Map();
+  if (!name) {
+    return computed;
+  }
+
+  const theme = lookup.get(name);
+
   if (!theme) {
     return computed;
   }
+
   const variables = parseVariables(_variables);
   const context = new contexts.Eval(
     {}, [{
       variable: (name: string) => {
         const _name = name.substr(1);
         if (variables && variables[_name]) {
-          return new tree.Declaration(name, variables[_name]);
+          return { value: variables[_name] };
         }
       },
       functionRegistry,
@@ -157,15 +164,15 @@ function compute(
     (name) => {
       const value = theme.variables[name];
       if (typeof value === 'string') {
-        computed[name] = value;
+        computed.set(name, value);
         return;
       }
 
       try {
-        computed[name] = value.node.eval(context).toCSS(context);
+        computed.set(name, value.node.eval(context).toCSS(context))
       }
       catch (err) {
-        computed[name] = value.default;
+        computed.set(name, value.default);
       }
     }
   );
@@ -173,7 +180,7 @@ function compute(
 }
 
 export function setTheme(theme: ThemeOptions) {
-  const variables = theme.name ? compute(lookup.get(theme.name), theme.variables) : {};
+  const variables = compute(theme);
   loadTheme(variables);
   return variables;
 }
@@ -184,21 +191,23 @@ interface ThemeProviderProps {
   onChange?: (value: ThemeOptions) => void;
 }
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ theme, onChange, children }) => {
-  const variables = React.useMemo(
-    () => {
-      if (theme.name) {
-        return compute(lookup.get(theme.name), theme.variables);
-      }
-      return {};
-    },
-    [theme]
-  );
+  const rendering = React.useRef(false);
 
   React.useEffect(
     () => {
-      loadTheme(variables);
+      if (rendering.current) {
+        return;
+      }
+      rendering.current = true;
+      setTimeout(() => {
+        const variables = compute(theme);
+        setTimeout(() => {
+          loadTheme(variables);
+        }, 0);
+        rendering.current = false;
+      }, 0);
     },
-    [variables]
+    [theme.name, theme.variables]
   );
 
   const onChangeRef = React.useRef(onChange);
@@ -213,30 +222,18 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ theme, onChange, c
     []
   );
 
-  const state = React.useMemo(
-    () => ({
-      ...theme,
-      themes,
-      computed: variables,
-    }),
-    [theme, variables]
-  );
 
   return (
-    <ThemeContext.Provider value={[state, set]}>
+    <ThemeContext.Provider value={[{...theme, themes}, set]}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-export function useTheme(): [ThemeState, ThemeAction] {
+export function useTheme(): [ThemeOptions, ThemeAction] {
   const context = React.useContext(ThemeContext);
   if (!context) {
     throw new Error('');
   }
-  const [state, set] = context;
-  return [
-    { ...state, themes },
-    set,
-  ];
+  return context;
 }

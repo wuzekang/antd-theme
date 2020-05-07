@@ -75,25 +75,15 @@ const treeData = [
   },
 ];
 
-const TreeDemo = () => {
-  const onSelect = (selectedKeys, info) => {
-  };
-
-  const onCheck = (checkedKeys, info) => {
-  };
-
-  return (
-    <Tree
-      checkable
-      defaultExpandedKeys={['0-0-0', '0-0-1']}
-      defaultSelectedKeys={['0-0-0', '0-0-1']}
-      defaultCheckedKeys={['0-0-0', '0-0-1']}
-      onSelect={onSelect}
-      onCheck={onCheck}
-      treeData={treeData}
-    />
-  );
-};
+const TreeDemo = () => (
+  <Tree
+    checkable
+    defaultExpandedKeys={['0-0-0', '0-0-1']}
+    defaultSelectedKeys={['0-0-0', '0-0-1']}
+    defaultCheckedKeys={['0-0-0', '0-0-1']}
+    treeData={treeData}
+  />
+);
 
 const initialTheme = { name: 'default', variables: { 'primary-color': '#00ff00', theme: 'default' } };
 
@@ -102,8 +92,20 @@ setTheme(initialTheme);
 const ThemeSelect = () => {
   const [{ name, variables, themes }, setTheme] = useTheme();
 
-  return (
-    <>
+  const sketchPicker = React.useMemo(
+    () => (
+      <SketchPicker
+        color={variables['primary-color']}
+        onChange={(value) => {
+          setTheme({ name, variables: { 'primary-color': value.hex, theme: name === 'dark' ? 'dark' : 'default' } });
+        }}
+      />
+    ),
+    [variables]
+  );
+
+  const select = React.useMemo(
+    () => (
       <Select
         style={{ width: 100 }}
         value={name}
@@ -121,30 +123,41 @@ const ThemeSelect = () => {
           )
         }
       </Select>
-      <SketchPicker
-        color={variables['primary-color']}
-        onChange={(value) => {
-          setTheme({ name, variables: { 'primary-color': value.hex, theme: name === 'dark' ? 'dark' : 'default' } });
-        }}
-      />
+    ),
+    [name]
+  );
+
+  return (
+    <>
+      {select}
+      {sketchPicker}
     </>
   );
 };
 
 const App = () => {
   const [theme, setTheme] = React.useState(initialTheme);
+  const demo = React.useMemo(
+    () => (
+      <>
+        <Button type="primary">Button</Button>
+        <Button>Button</Button>
+        <Button type="dashed">Button</Button>
+        <TreeDemo />
+        <TreeSelectDemo />
+        <TimePicker />
+      </>
+    ),
+    []
+  );
+
   return (
     <ThemeProvider
       theme={theme}
       onChange={(value) => setTheme(value)}
     >
       <ThemeSelect />
-      <Button type="primary">Button</Button>
-      <Button>Button</Button>
-      <Button type="dashed">Button</Button>
-      <TreeDemo />
-      <TreeSelectDemo />
-      <TimePicker />
+      {demo}
     </ThemeProvider>
   );
 };

@@ -19,9 +19,7 @@ export interface IThemingInstruction {
 
 export type ThemableArray = IThemingInstruction[];
 
-export interface ITheme {
-  [key: string]: string;
-}
+export type ITheme = Map<string,string>;
 
 interface IStyleSheet {
   cssText: string;
@@ -322,7 +320,7 @@ function resolveThemableArray(splitStyleArray: ThemableArray): IThemableArrayRes
     if (themeSlot) {
       themable = true;
       // A theming annotation. Resolve it.
-      const themedValue: string | undefined = theme ? theme[themeSlot] : undefined;
+      const themedValue: string | undefined = theme ? theme.get(themeSlot) : undefined;
       // const defaultValue: string = currentValue.defaultValue || 'inherit';
 
       // Warn to console if we hit an unthemed value even when themes are provided, but only if "DEBUG" is true.
