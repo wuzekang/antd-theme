@@ -10,9 +10,7 @@ export interface IThemingInstruction {
     rawString?: string;
 }
 export declare type ThemableArray = IThemingInstruction[];
-export interface ITheme {
-    [key: string]: string;
-}
+export declare type ITheme = Map<string, string>;
 /**
  * In sync mode, styles are registered as style elements synchronously with loadStyles() call.
  * In async mode, styles are buffered and registered as batch in async timer for performance purpose.

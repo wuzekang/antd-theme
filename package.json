@@ -1,6 +1,6 @@
 {
   "name": "antd-theme",
-  "version": "0.3.0-2",
+  "version": "0.3.0-3",
   "description": "Provide runtime dynamic theme for ant design.",
   "main": "lib/index.js",
   "scripts": {
