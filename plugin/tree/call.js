@@ -52,7 +52,7 @@ class Call extends less.tree.Call {
       context.enterCalc();
     }
 
-    const args = this.args.map((a) => a instanceof Node ? a.eval(context) : a);
+    const args = this.args.map((a) => (a instanceof Node ? a.eval(context) : a));
 
     if (this.calc || context.inCalc) {
       context.exitCalc();

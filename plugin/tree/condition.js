@@ -14,8 +14,8 @@ class Condition extends less.tree.Condition {
     const { op } = this;
     const result = (() => {
       switch (op) {
-      case 'and': return a && b;
-      case 'or': return a || b;
+      case 'and': return !!(a && b);
+      case 'or': return !!(a || b);
       default:
         switch (Node.compare(a, b)) {
         case -1:

@@ -1,6 +1,9 @@
 const less = require('less');
 const Muteable = require('../tree/muteable');
 const colorPalette = require('../../lib/colorPalette');
+const ReductionVisitor = require('./reductionVisitor');
+
+const reductionVisitor = new ReductionVisitor();
 
 class ResolveVisitor {
   constructor(runtimeVariableNames, variables) {
@@ -39,7 +42,9 @@ class ResolveVisitor {
     if (value instanceof Muteable) {
       return {
         runtime: true,
-        expr: value.origin,
+        expr: reductionVisitor.run(
+          value.origin
+        ),
         node: value.value,
         value: value.value.toCSS(context),
       };
