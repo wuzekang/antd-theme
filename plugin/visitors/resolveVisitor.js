@@ -6,11 +6,13 @@ const ReductionVisitor = require('./reductionVisitor');
 const reductionVisitor = new ReductionVisitor();
 
 class ResolveVisitor {
-  constructor(runtimeVariableNames, variables) {
+  constructor(runtimeVariableNames, variables, runtimeVariableVisitor) {
     this._visitor = new less.visitors.Visitor(this);
     this.isReplacing = true;
     this.lookup = new Set();
     this.variables = variables;
+    this.runtimeVariableVisitor = runtimeVariableVisitor;
+
     runtimeVariableNames.forEach(
       (name) => this.lookup.add(name)
     );
@@ -40,13 +42,23 @@ class ResolveVisitor {
       .eval(this._context);
 
     if (value instanceof Muteable) {
+      const reduction = reductionVisitor.run(
+        value.origin
+      );
+      if (this.runtimeVariableVisitor.include(reduction)) {
+        return {
+          runtime: true,
+          expr: reduction,
+          node: value.value,
+          value: value.value.toCSS(context),
+        };
+      }
+
       return {
-        runtime: true,
-        expr: reductionVisitor.run(
-          value.origin
-        ),
-        node: value.value,
-        value: value.value.toCSS(context),
+        runtime: false,
+        expr: null,
+        node: reduction,
+        value: reduction.toCSS(context),
       };
     }
 

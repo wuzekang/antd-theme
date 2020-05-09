@@ -146,7 +146,8 @@ class AntdThemePlugin {
           );
           resolveVisitors[i] = new ResolveVisitor(
             runtimeVariableNames,
-            mergedVariableGroups[name]
+            mergedVariableGroups[name],
+            runtimeVariableVisitors[i]
           );
         }
       );
