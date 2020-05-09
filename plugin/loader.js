@@ -38,7 +38,7 @@ function pitch() {
       if (loader.path === require.resolve('less-loader')) {
         return {
           ...loader,
-          options: this._compiler.hooks[lessLoaderOptions].call(this.options),
+          options: this._compiler.hooks[lessLoaderOptions].call(loader.options),
         };
       }
       return loader;

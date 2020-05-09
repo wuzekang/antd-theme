@@ -45,8 +45,10 @@ module.exports = {
           {
             loader: 'less-loader',
             options: {
-              compress: true,
-              javascriptEnabled: true,
+              lessOptions: {
+                compress: true,
+                javascriptEnabled: true,
+              },
             },
           },
         ],

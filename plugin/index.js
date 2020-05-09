@@ -1,6 +1,11 @@
+// eslint-disable-next-line max-classes-per-file
+const less = require('less');
 const path = require('path');
 const { RawSource } = require('webpack-sources');
 const { SyncWaterfallHook } = require('tapable');
+const { version } = require('less-loader/package.json');
+const semver = require('semver');
+
 const ColorPalettePlugin = require('./colorPalettePlugin');
 const extractVariables = require('./extractVariables');
 const { pluginName, lessLoaderOptions } = require('./constants');
@@ -13,8 +18,43 @@ const LessThemePlugin = require('./lessThemePlugin');
 const themesModulePath = path.resolve(__dirname, '../lib/themes.js');
 const defaultThemeName = 'default';
 
+class LessLoaderVersionError extends Error {
+  constructor(version) {
+    super(`less-loader@${version} is not suported now, please use less-loader@5 or less-loader@6`);
+  }
+}
+
+const getLessLoaderOptions = (loaderOptions, plugin) => {
+  if (semver.satisfies(version, '^5')) {
+    const lessOptions = {
+      plugins: [],
+      ...loaderOptions,
+    };
+    lessOptions.plugins.unshift(plugin);
+    return lessOptions;
+  }
+
+  if (semver.satisfies(version, '^6')) {
+    const lessOptions = {
+      plugins: [],
+      ...loaderOptions.lessOptions,
+    };
+    lessOptions.plugins.unshift(plugin);
+    return {
+      ...loaderOptions,
+      lessOptions,
+      implementation: less,
+    };
+  }
+
+  throw new LessLoaderVersionError(version);
+};
+
 class AntdThemePlugin {
   constructor(options) {
+    if (!semver.satisfies(version, '^5 || ^6')) {
+      throw new LessLoaderVersionError(version);
+    }
     this.options = options;
   }
 
@@ -37,26 +77,26 @@ class AntdThemePlugin {
       return runtimeVariableVisitors[i].include(node, variableName);
     };
 
-
     compiler.hooks[lessLoaderOptions] = new SyncWaterfallHook(['options']);
+
+    const lessThemePlugin = new LessThemePlugin(
+      (expr) => {
+        extractedExprs[expr.name] = expr;
+      },
+      {
+        has: (key) => changedVariableNames.has(key),
+        get: (key) => changedVariableNames.get(key),
+      }
+    );
 
     compiler.hooks[lessLoaderOptions].tap(
       pluginName,
-      (options) => ({
-        ...options,
-        javascriptEnabled: true,
-        plugins: [
-          new LessThemePlugin(
-            (expr) => {
-              extractedExprs[expr.name] = expr;
-            },
-            {
-              has: (key) => changedVariableNames.has(key),
-              get: (key) => changedVariableNames.get(key),
-            }
-          ),
-        ],
-      })
+      (options) => (
+        getLessLoaderOptions(
+          options,
+          lessThemePlugin
+        )
+      )
     );
 
     compiler.hooks.beforeCompile.tapPromise(pluginName, async () => {
