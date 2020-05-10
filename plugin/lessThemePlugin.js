@@ -18,9 +18,9 @@ class LessVariablesExtractPlugin {
   install(less, pluginManager, functionRegistry) {
     pluginManager.addPlugin(new ColorPalettePlugin());
     pluginManager.addVisitor(new NodeReplaceVisitor(functionRegistry, this.variables));
-    pluginManager.addVisitor(new ThemeExtractVisitor(this.listener));
     pluginManager.addVisitor(new MixinExpansionVisitor(functionRegistry));
     pluginManager.addVisitor(new GuardTransformVisitor(functionRegistry));
+    pluginManager.addVisitor(new ThemeExtractVisitor(this.listener));
   }
 
   /* Called for each instance of your @plugin. */

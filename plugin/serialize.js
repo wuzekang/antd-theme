@@ -1,5 +1,4 @@
 const less = require('less');
-const Muteable = require('./tree/muteable');
 
 function serialize(node) {
   if (node instanceof less.tree.Call) {
@@ -112,7 +111,7 @@ function serialize(node) {
       value: serialize(node.value),
     };
   }
-  if (node instanceof Muteable) {
+  if (node instanceof less.tree.Node && node.type === 'Muteable') {
     return {
       type: node.type,
       origin: serialize(node.origin),

@@ -73,7 +73,8 @@ const initialize = async (options) => {
       );
       resolveVisitors[i] = new ResolveVisitor(
         runtimeVariableNames,
-        mergedVariableGroups[name]
+        mergedVariableGroups[name],
+        runtimeVariableVisitors[i]
       );
     }
   );

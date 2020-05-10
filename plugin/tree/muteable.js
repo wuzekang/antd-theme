@@ -1,13 +1,12 @@
 const less = require('less');
 const Variable = require('./variable');
-
-let cnt = 0;
+const serialize = require('../serialize');
+const sha1 = require('../sha1');
 
 class Muteable extends less.tree.Node {
   constructor(origin, value, index, currentFileInfo) {
     super();
     this.origin = origin;
-    this._varName = cnt++;
     this.value = value;
     this._index = index;
     this._fileInfo = currentFileInfo;
@@ -15,20 +14,19 @@ class Muteable extends less.tree.Node {
   }
 
   varName() {
-    const { name } = this;
+    const { origin } = this;
 
-    if (name instanceof Variable) {
-      const camelCaseName = name.name.substr(1).split('-').reduce(
+    if (origin instanceof Variable) {
+      const camelCaseName = origin.name.substr(1).split('-').reduce(
         (acc, val) => `${acc}${acc ? val.replace(/^\S/, (s) => s.toUpperCase()) : val}`,
         ''
       );
       return camelCaseName;
     }
 
-    // const chunk = JSON.stringify(serialize(name));
-    // const hashName = sha1(chunk).substr(0, 16);
-    // return hashName;
-    return this._varName.toString();
+    const chunk = JSON.stringify(serialize(origin));
+    const hashName = sha1(chunk).substr(0, 16);
+    return hashName;
   }
 
   genCSS(context, output) {
