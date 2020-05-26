@@ -32,6 +32,23 @@ module.exports = {
   module: {
     rules: [
       {
+        test: /\.(j|t)sx?$/,
+        use: [
+          {
+            loader: 'babel-loader',
+            options: {
+              plugins: [
+                ['import', {
+                  libraryName: 'antd',
+                  style: true,
+                }],
+              ],
+              presets: ['react-app'],
+            },
+          },
+        ],
+      },
+      {
         test: /\.less$/i,
         use: [
           {
@@ -52,7 +69,8 @@ module.exports = {
   },
   plugins: [
     new AntdThemePlugin({
-      variables: ['primary-color'], // Variables declared here can be modified at runtime
+      // Variables declared here can be modified at runtime
+      variables: ['primary-color'],
       themes: [
         {
           name: 'dark',
