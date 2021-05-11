@@ -1,6 +1,6 @@
 {
   "name": "antd-theme",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Provide runtime dynamic theme for ant design.",
   "homepage": "https://wuzekang.github.io/antd-theme",
   "repository": {
@@ -51,7 +51,7 @@
     "gh-pages": "^2.2.0",
     "html-webpack-plugin": "^4.3.0",
     "jest": "^26.0.1",
-    "less": "^3.11.1",
+    "less": "3.11.1",
     "less-loader": "^6.1.0",
     "p-limit": "^2.3.0",
     "react": "^16.8.0",
